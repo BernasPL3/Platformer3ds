@@ -10,7 +10,7 @@ TOPDIR ?= $(CURDIR)
 
 include $(DEVKITARM)/3ds_rules
 
-APP_TITLE       := MonkeyDS
+APP_TITLE       := Platformer
 APP_DESCRIPTION := Platformer for Nintendo 3DS
 APP_AUTHOR      := BernardoGames
 
