@@ -1,10 +1,10 @@
 #include <3ds.h>
 #include <citro2d.h>
+#include "enemy.h"
 
 struct Player {
     float x;
     float y;
-    float velX;
     float velY;
     bool grounded;
 };
@@ -23,17 +23,18 @@ int main(int argc, char* argv[]) {
 
     player.x = 50.0f;
     player.y = 180.0f;
-    player.velX = 0.0f;
     player.velY = 0.0f;
     player.grounded = true;
 
+    Enemy enemy(250.0f, 200.0f);
+
     const float gravity = 0.35f;
     const float jumpForce = -6.5f;
-    const float moveSpeed = 2.0f;
-
+    const float moveSpeed = 2.5f;
     const float groundY = 200.0f;
 
     while (aptMainLoop()) {
+
         hidScanInput();
 
         u32 kDown = hidKeysDown();
@@ -42,24 +43,15 @@ int main(int argc, char* argv[]) {
         if (kDown & KEY_START)
             break;
 
-        // Circle Pad
-        circlePosition pos;
-        hidCircleRead(&pos);
+        circlePosition circle;
+        hidCircleRead(&circle);
 
-        player.velX = 0.0f;
+        // Movimento
+        if (circle.dx < -20 || (kHeld & KEY_LEFT))
+            player.x -= moveSpeed;
 
-        if (pos.dx < -20)
-            player.velX = -moveSpeed;
-
-        if (pos.dx > 20)
-            player.velX = moveSpeed;
-
-        // D-Pad também funciona
-        if (kHeld & KEY_LEFT)
-            player.velX = -moveSpeed;
-
-        if (kHeld & KEY_RIGHT)
-            player.velX = moveSpeed;
+        if (circle.dx > 20 || (kHeld & KEY_RIGHT))
+            player.x += moveSpeed;
 
         // Pulo
         if ((kDown & KEY_A) && player.grounded) {
@@ -69,12 +61,9 @@ int main(int argc, char* argv[]) {
 
         // Gravidade
         player.velY += gravity;
-
-        // Atualizar posição
-        player.x += player.velX;
         player.y += player.velY;
 
-        // Colisão com chão
+        // Chão
         if (player.y >= groundY) {
             player.y = groundY;
             player.velY = 0;
@@ -88,10 +77,26 @@ int main(int argc, char* argv[]) {
         if (player.x > 380)
             player.x = 380;
 
-        // Renderização
+        // Atualizar inimigo
+        enemy.Update();
+
+        // Colisão simples
+        bool collision =
+            player.x + 20 > enemy.x &&
+            player.x < enemy.x + 20 &&
+            player.y + 20 > enemy.y &&
+            player.y < enemy.y + 20;
+
+        if (collision) {
+            player.x = 50;
+            player.y = 180;
+            player.velY = 0;
+        }
+
+        // Render
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
-        C2D_TargetClear(top, C2D_Color32(120, 200, 255, 255));
+        C2D_TargetClear(top, C2D_Color32(100, 180, 255, 255));
         C2D_SceneBegin(top);
 
         // Chão
@@ -109,6 +114,9 @@ int main(int argc, char* argv[]) {
             20, 20,
             C2D_Color32(255, 0, 0, 255)
         );
+
+        // Inimigo
+        enemy.Draw();
 
         C3D_FrameEnd(0);
     }
